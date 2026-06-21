@@ -192,7 +192,7 @@ export default function ProfileScreen() {
             </LinearGradient>
           </View>
           <Text style={styles.profileName}>{userName}</Text>
-          <Text style={styles.profileEmail}>alex@laundryrunner.com</Text>
+          <Text style={styles.profileEmail}>alex@laundrydispatch.com</Text>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
@@ -233,7 +233,7 @@ export default function ProfileScreen() {
           <Text style={styles.logoutText}>Log Out</Text>
         </TouchableOpacity>
 
-        <Text style={styles.versionText}>Laundry Runner v1.0.0</Text>
+        <Text style={styles.versionText}>Laundry Dispatch v1.0.0</Text>
 
         <View style={{ height: 40 }} />
       </ScrollView>

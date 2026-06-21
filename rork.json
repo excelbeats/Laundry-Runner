@@ -1,9 +1,0 @@
-{
-  "apps": [
-    {
-      "name": "Laundry Runner",
-      "path": "expo",
-      "framework": "react-native"
-    }
-  ]
-}

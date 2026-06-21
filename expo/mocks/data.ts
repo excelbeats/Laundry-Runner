@@ -245,7 +245,7 @@ export const mockNotifications: Notification[] = [
   },
   {
     id: 'notif_4',
-    title: 'Welcome to Laundry Runner!',
+    title: 'Welcome to Laundry Dispatch!',
     message: 'Thanks for joining. Your first order gets free pickup!',
     type: 'system',
     read: true,
