@@ -29,13 +29,6 @@ do $$ begin
   create type public.promo_type as enum ('percent','fixed');
 exception when duplicate_object then null; end $$;
 
--- ---------- Helper: current user's role (SECURITY DEFINER avoids RLS recursion) ----------
-create or replace function public.current_user_role()
-returns public.user_role
-language sql stable security definer set search_path = public as $$
-  select role from public.profiles where id = auth.uid();
-$$;
-
 -- ---------- Tables ----------
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -182,6 +175,13 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- ---------- Helper: current user's role (SECURITY DEFINER avoids RLS recursion) ----------
+create or replace function public.current_user_role()
+returns public.user_role
+language sql stable security definer set search_path = public as $$
+  select role from public.profiles where id = auth.uid();
+$$;
 
 -- ---------- Row Level Security ----------
 alter table public.profiles enable row level security;
