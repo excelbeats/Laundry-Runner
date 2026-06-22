@@ -54,6 +54,7 @@ function RootLayoutNav() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="schedule-pickup" options={{ ...headerScreen("Schedule Pickup"), presentation: "modal" }} />
+      <Stack.Screen name="add-address" options={{ ...headerScreen("Add Address"), presentation: "modal" }} />
       <Stack.Screen name="order-details" options={headerScreen("Order Details")} />
       <Stack.Screen name="order-tracking" options={headerScreen("Live Tracking")} />
       <Stack.Screen name="notifications" options={headerScreen("Notifications")} />

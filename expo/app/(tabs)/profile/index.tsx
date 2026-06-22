@@ -68,7 +68,7 @@ export default function ProfileScreen() {
       icon: MapPin,
       label: 'Saved Addresses',
       subtitle: `${addresses.length} addresses`,
-      onPress: () => Alert.alert('Addresses', 'Manage your saved addresses'),
+      onPress: () => router.push('/add-address'),
     },
     {
       icon: CreditCard,

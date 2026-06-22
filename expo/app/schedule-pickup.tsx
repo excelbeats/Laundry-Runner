@@ -244,6 +244,11 @@ export default function SchedulePickupScreen() {
         </TouchableOpacity>
       ))}
 
+      <TouchableOpacity style={styles.addAddressBtn} onPress={() => router.push('/add-address')} activeOpacity={0.8}>
+        <Plus size={16} color={Colors.primary} />
+        <Text style={styles.addAddressText}>Add new address</Text>
+      </TouchableOpacity>
+
       <Text style={[styles.stepTitle, { marginTop: 24 }]}>Delivery Address</Text>
       <Text style={styles.stepSubtitle}>Same as pickup or different?</Text>
 
@@ -726,6 +731,23 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  addAddressBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderStyle: 'dashed',
+    marginTop: 4,
+  },
+  addAddressText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.primary,
   },
   serviceCard: {
     backgroundColor: Colors.card,
