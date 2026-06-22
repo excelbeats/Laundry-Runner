@@ -310,9 +310,25 @@ grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
 grant usage on sequence public.order_seq to authenticated;
 
--- Prevent users from changing their own role (privilege escalation). Role is set
--- by the signup trigger (SECURITY DEFINER) or by an admin via a privileged path.
-revoke update (role) on public.profiles from authenticated;
+-- Prevent end users from changing their own role (privilege escalation).
+-- A table-level UPDATE grant can't be carved out per-column, so use a trigger:
+-- role changes are only honored for admins, or the service role / SECURITY DEFINER
+-- signup trigger (where auth.uid() is null).
+create or replace function public.prevent_role_change()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if new.role is distinct from old.role then
+    if auth.uid() is not null
+       and coalesce((select role from public.profiles where id = auth.uid()), 'customer') <> 'admin' then
+      new.role := old.role;
+    end if;
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists profiles_prevent_role_change on public.profiles;
+create trigger profiles_prevent_role_change before update on public.profiles
+  for each row execute function public.prevent_role_change();
 
 -- ---------- Seed: service catalog ----------
 insert into public.services (id, name, description, price_per_pound, icon, color, estimated_hours) values
