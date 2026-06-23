@@ -20,8 +20,6 @@ import {
   ChevronRight,
   Star,
   Shield,
-  Truck,
-  LayoutDashboard,
   LogOut,
   Gift,
   Clock,
@@ -43,7 +41,7 @@ interface MenuItem {
 export default function ProfileScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { orders, addresses, setUserRole } = useAppState();
+  const { orders, addresses } = useAppState();
   const { profile, signOut } = useAuth();
   const userName = profile?.name || 'there';
 
@@ -111,29 +109,6 @@ export default function ProfileScreen() {
       icon: Shield,
       label: 'Privacy & Terms',
       onPress: () => Alert.alert('Privacy', 'View our privacy policy'),
-    },
-  ];
-
-  const switchItems: MenuItem[] = [
-    {
-      icon: Truck,
-      label: 'Driver Dashboard',
-      subtitle: 'Switch to driver view',
-      onPress: () => {
-        setUserRole('driver');
-        router.push('/driver-dashboard');
-      },
-      color: Colors.info,
-    },
-    {
-      icon: LayoutDashboard,
-      label: 'Admin Dashboard',
-      subtitle: 'Manage operations',
-      onPress: () => {
-        setUserRole('admin');
-        router.push('/admin-dashboard');
-      },
-      color: Colors.warning,
     },
   ];
 
@@ -226,7 +201,6 @@ export default function ProfileScreen() {
 
         {renderMenuSection('Account', accountItems)}
         {renderMenuSection('General', generalItems)}
-        {renderMenuSection('Switch Role', switchItems)}
 
         <TouchableOpacity
           style={styles.logoutButton}
