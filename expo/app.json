@@ -36,6 +36,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "4b088079-94b8-4275-88f7-264d854644a3"
+      }
+    },
+    "owner": "excelbeats"
   }
 }
