@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
-  Alert,
   Platform,
   Linking,
   ActivityIndicator,
@@ -21,11 +20,13 @@ import {
   CheckCircle,
   MapPin,
   ArrowRight,
+  LogOut,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppState } from '@/hooks/useAppState';
+import { confirmAction, notify } from '@/lib/dialog';
 import { mockServices, ORDER_STATUS_CONFIG } from '@/mocks/data';
 import type { Order, OrderStatus } from '@/types';
 
@@ -68,7 +69,7 @@ function amount(order: Order): number {
 }
 
 export default function DriverDashboardScreen() {
-  const { session, profile } = useAuth();
+  const { session, profile, signOut } = useAuth();
   const userId = session?.user?.id ?? null;
   const { orders, claimOrder, updateOrderStatus, isLoading } = useAppState();
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -104,7 +105,7 @@ export default function DriverDashboardScreen() {
   const handleClaim = useCallback((order: Order) => {
     haptic(Haptics.ImpactFeedbackStyle.Heavy);
     claimOrder(order.id);
-    Alert.alert('Job accepted', `${order.id} is yours. Head to the pickup address.`);
+    notify('Job accepted', `${order.id} is yours. Head to the pickup address.`);
   }, [claimOrder, haptic]);
 
   const handleAdvance = useCallback((order: Order) => {
@@ -121,6 +122,20 @@ export default function DriverDashboardScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerName} numberOfLines={1}>{profile?.name || 'Driver'}</Text>
+          <Text style={styles.headerEmail} numberOfLines={1}>{profile?.email}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => confirmAction('Log Out', 'Log out?', () => { void signOut(); }, 'Log Out')}
+        >
+          <LogOut size={16} color={Colors.error} />
+          <Text style={styles.logoutBtnText}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.onlineRow}>
         <View style={styles.onlineInfo}>
           <View style={[styles.onlineDot, { backgroundColor: isOnline ? Colors.success : Colors.textTertiary }]} />
@@ -273,6 +288,12 @@ export default function DriverDashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { padding: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 12 },
+  headerInfo: { flex: 1 },
+  headerName: { fontSize: 18, fontWeight: '800' as const, color: Colors.text },
+  headerEmail: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.errorLight },
+  logoutBtnText: { fontSize: 13, fontWeight: '600' as const, color: Colors.error },
   onlineRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     backgroundColor: Colors.card, borderRadius: 14, padding: 16, marginBottom: 12,

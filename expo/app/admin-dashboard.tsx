@@ -8,7 +8,7 @@ import {
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
-import { Users, Truck, Package, DollarSign, AlertCircle, Shield } from 'lucide-react-native';
+import { Users, Truck, Package, DollarSign, AlertCircle, Shield, LogOut } from 'lucide-react-native';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Colors from '@/constants/colors';
 import { supabase } from '@/lib/supabase';
@@ -23,7 +23,7 @@ const ROLES: UserRole[] = ['customer', 'driver', 'admin'];
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export default function AdminDashboardScreen() {
-  const { profile, session } = useAuth();
+  const { profile, session, signOut } = useAuth();
   const userId = session?.user?.id ?? null;
   const qc = useQueryClient();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -107,6 +107,20 @@ export default function AdminDashboardScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.header}>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerName} numberOfLines={1}>{profile?.name || 'Admin'}</Text>
+          <Text style={styles.headerEmail} numberOfLines={1}>{profile?.email}</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={() => confirmAction('Log Out', 'Log out of the admin panel?', () => { void signOut(); }, 'Log Out')}
+        >
+          <LogOut size={16} color={Colors.error} />
+          <Text style={styles.logoutBtnText}>Log Out</Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.tabRow}>
         {(['overview', 'orders', 'people'] as TabType[]).map(tab => (
           <TouchableOpacity key={tab} style={[styles.tab, activeTab === tab && styles.tabActive]} onPress={() => setActiveTab(tab)}>
@@ -210,6 +224,12 @@ function Metric({ icon: Icon, color, value, label }: { icon: any; color: string;
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   scrollContent: { padding: 16 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 },
+  headerInfo: { flex: 1 },
+  headerName: { fontSize: 18, fontWeight: '800' as const, color: Colors.text },
+  headerEmail: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.errorLight },
+  logoutBtnText: { fontSize: 13, fontWeight: '600' as const, color: Colors.error },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: Colors.background },
   deniedText: { fontSize: 16, color: Colors.textSecondary, fontWeight: '600' as const },
   tabRow: { flexDirection: 'row', backgroundColor: Colors.card, borderRadius: 14, padding: 4, marginBottom: 20 },
