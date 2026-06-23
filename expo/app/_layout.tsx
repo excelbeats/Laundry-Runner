@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppStateProvider } from "@/hooks/useAppState";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
@@ -21,7 +21,6 @@ function RootLayoutNav() {
   const { loading, isAuthenticated, role } = useAuth();
   const segments = useSegments();
   const router = useRouter();
-  const didInitialRoute = useRef<boolean>(false);
 
   useEffect(() => {
     if (!loading) void SplashScreen.hideAsync();
@@ -29,23 +28,32 @@ function RootLayoutNav() {
 
   useEffect(() => {
     if (loading) return;
-    const inAuthGroup = segments[0] === "(auth)";
+    const seg0 = segments[0];
+    const inAuthGroup = seg0 === "(auth)";
 
     if (!isAuthenticated) {
-      didInitialRoute.current = false;
       if (!inAuthGroup) router.replace("/(auth)/login");
       return;
     }
 
-    // Authenticated — wait until the profile (role) is loaded before routing.
+    // Wait until the profile (role) is loaded before routing.
     if (role == null) return;
 
-    if (inAuthGroup || !didInitialRoute.current) {
-      didInitialRoute.current = true;
-      if (role === "driver") router.replace("/driver-dashboard");
-      else if (role === "admin") router.replace("/admin-dashboard");
-      else router.replace("/(tabs)/(home)");
+    const homeFor =
+      role === "admin" ? "/admin-dashboard" : role === "driver" ? "/driver-dashboard" : "/(tabs)/(home)";
+
+    // Just signed in (still on the auth screens) → send to the role's home.
+    if (inAuthGroup) {
+      router.replace(homeFor);
+      return;
     }
+
+    // Keep each role inside its own area — bounce out of another role's section.
+    const inWrongSection =
+      (seg0 === "(tabs)" && role !== "customer") ||
+      (seg0 === "driver-dashboard" && role !== "driver") ||
+      (seg0 === "admin-dashboard" && role !== "admin");
+    if (inWrongSection) router.replace(homeFor);
   }, [loading, isAuthenticated, role, segments, router]);
 
   return (
