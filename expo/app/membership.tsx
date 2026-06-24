@@ -23,7 +23,7 @@ const TIERS: Tier[] = [
 
 export default function MembershipScreen() {
   const { profile, isMember } = useAuth();
-  const { startSubscription } = useAppState();
+  const { startSubscription, openBillingPortal } = useAppState();
   const [busy, setBusy] = useState<string | null>(null);
 
   const subscribe = useCallback(async (tier: string) => {
@@ -40,6 +40,20 @@ export default function MembershipScreen() {
     }
   }, [startSubscription]);
 
+  const manage = useCallback(async () => {
+    try {
+      setBusy('manage');
+      const url = await openBillingPortal();
+      if (!url) { notify('Something went wrong', 'Could not open the billing portal — please try again.'); return; }
+      if (Platform.OS === 'web') window.location.href = url;
+      else await Linking.openURL(url);
+    } catch (e) {
+      notify('Could not open portal', (e as Error).message);
+    } finally {
+      setBusy(null);
+    }
+  }, [openBillingPortal]);
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.hero}>
@@ -53,6 +67,12 @@ export default function MembershipScreen() {
           <Sparkles size={18} color={Colors.success} />
           <Text style={styles.currentText}>You&apos;re a <Text style={styles.currentTier}>{profile?.subscriptionTier ?? 'member'}</Text> member — fees are waived on your orders 🎉</Text>
         </View>
+      )}
+
+      {isMember && (
+        <TouchableOpacity style={styles.manageBtn} onPress={manage} disabled={busy !== null} activeOpacity={0.85}>
+          {busy === 'manage' ? <ActivityIndicator color={Colors.primary} /> : <Text style={styles.manageBtnText}>Manage / cancel subscription</Text>}
+        </TouchableOpacity>
       )}
 
       {TIERS.map((t) => {
@@ -127,5 +147,7 @@ const styles = StyleSheet.create({
   ctaPopular: { backgroundColor: Colors.primary },
   ctaDisabled: { backgroundColor: Colors.textTertiary, opacity: 0.7 },
   ctaText: { color: '#fff', fontSize: 15, fontWeight: '700' as const },
+  manageBtn: { borderWidth: 1, borderColor: Colors.border, borderRadius: 14, paddingVertical: 13, alignItems: 'center', marginBottom: 16 },
+  manageBtnText: { color: Colors.primary, fontSize: 14, fontWeight: '700' as const },
   fineprint: { textAlign: 'center', fontSize: 12, color: Colors.textTertiary, marginTop: 4 },
 });
