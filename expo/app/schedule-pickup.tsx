@@ -34,8 +34,8 @@ import Colors from '@/constants/colors';
 import { useAppState } from '@/hooks/useAppState';
 import { useAuth } from '@/hooks/useAuth';
 import { notify, notifyThen } from '@/lib/dialog';
-import { mockServices, mockTimeSlots } from '@/mocks/data';
-import { ServiceType, TimeSlot, Order } from '@/types';
+import { mockServices, mockTimeSlots, dryCleanItems } from '@/mocks/data';
+import { ServiceType, TimeSlot, Order, LineItem } from '@/types';
 
 type Step = 'address' | 'services' | 'schedule' | 'review';
 
@@ -64,6 +64,7 @@ export default function SchedulePickupScreen() {
   const [selectedDeliverySlot, setSelectedDeliverySlot] = useState<string>('');
   const [promoCode, setPromoCode] = useState<string>('');
   const [placing, setPlacing] = useState<boolean>(false);
+  const [itemQty, setItemQty] = useState<Record<string, number>>({});
 
   const stepIndex = STEPS.indexOf(currentStep);
 
@@ -78,14 +79,22 @@ export default function SchedulePickupScreen() {
     );
   }, []);
 
+  const setItem = useCallback((id: string, n: number) => {
+    setItemQty(prev => ({ ...prev, [id]: Math.max(0, n) }));
+  }, []);
+
+  const dryCleanTotal = useMemo(
+    () => dryCleanItems.reduce((sum, item) => sum + item.price * (itemQty[item.id] ?? 0), 0),
+    [itemQty],
+  );
+
   const estimatedPrice = useMemo(() => {
-    if (selectedServices.length === 0) return 0;
-    const totalPerPound = selectedServices.reduce((sum, sId) => {
+    const perPound = selectedServices.reduce((sum, sId) => {
       const svc = mockServices.find(s => s.id === sId);
       return sum + (svc?.pricePerPound ?? 0);
     }, 0);
-    return totalPerPound * estimatedPounds;
-  }, [selectedServices, estimatedPounds]);
+    return perPound * estimatedPounds + dryCleanTotal;
+  }, [selectedServices, estimatedPounds, dryCleanTotal]);
 
   const availablePickupSlots = useMemo(
     () => mockTimeSlots.filter(s => s.available),
@@ -102,7 +111,7 @@ export default function SchedulePickupScreen() {
       case 'address':
         return !!selectedAddressId;
       case 'services':
-        return selectedServices.length > 0;
+        return selectedServices.length > 0 || dryCleanTotal > 0;
       case 'schedule':
         return !!selectedPickupSlot;
       case 'review':
@@ -110,19 +119,23 @@ export default function SchedulePickupScreen() {
       default:
         return false;
     }
-  }, [currentStep, selectedAddressId, selectedServices, selectedPickupSlot]);
+  }, [currentStep, selectedAddressId, selectedServices, selectedPickupSlot, dryCleanTotal]);
 
   const placeOrderAndPay = useCallback(async () => {
     const pickupAddr = addresses.find(a => a.id === selectedAddressId) ?? addresses[0];
     const deliveryAddr = addresses.find(a => a.id === deliveryAddressId) ?? pickupAddr;
     const pickupSlot = mockTimeSlots.find(s => s.id === selectedPickupSlot) ?? mockTimeSlots[0];
     const deliverySlot = mockTimeSlots.find(s => s.id === selectedDeliverySlot);
+    const lineItems: LineItem[] = dryCleanItems
+      .filter(i => (itemQty[i.id] ?? 0) > 0)
+      .map(i => ({ id: i.id, name: i.name, price: i.price, qty: itemQty[i.id] ?? 0 }));
 
     const newOrder: Order = {
       id: `ORD-${Math.floor(1000 + Math.random() * 9000)}`,
       customerId: 'user_1',
       status: 'placed',
       services: selectedServices,
+      lineItems,
       pickupAddress: pickupAddr,
       deliveryAddress: deliveryAddr,
       pickupSlot: pickupSlot,
@@ -157,7 +170,7 @@ export default function SchedulePickupScreen() {
     } finally {
       setPlacing(false);
     }
-  }, [addresses, selectedAddressId, deliveryAddressId, selectedPickupSlot, selectedDeliverySlot, selectedServices, estimatedPounds, specialInstructions, estimatedPrice, fees, promoCode, addOrderAsync, startCheckout, router]);
+  }, [addresses, selectedAddressId, deliveryAddressId, selectedPickupSlot, selectedDeliverySlot, selectedServices, itemQty, estimatedPounds, specialInstructions, estimatedPrice, fees, promoCode, addOrderAsync, startCheckout, router]);
 
   const handleNext = useCallback(() => {
     if (Platform.OS !== 'web') {
@@ -370,6 +383,36 @@ export default function SchedulePickupScreen() {
         </View>
       </View>
 
+      <View style={styles.dcSection}>
+        <Text style={styles.dcHeading}>Dry Cleaning &amp; Household</Text>
+        <Text style={styles.dcSub}>Priced per item — add as many as you like</Text>
+        {['Dry Cleaning', 'Household'].map(cat => (
+          <View key={cat}>
+            <Text style={styles.dcCat}>{cat}</Text>
+            {dryCleanItems.filter(i => i.category === cat).map(item => {
+              const qty = itemQty[item.id] ?? 0;
+              return (
+                <View key={item.id} style={styles.dcRow}>
+                  <View style={styles.dcInfo}>
+                    <Text style={styles.dcName}>{item.name}</Text>
+                    <Text style={styles.dcPrice}>${item.price.toFixed(2)} each</Text>
+                  </View>
+                  <View style={styles.dcStepper}>
+                    <TouchableOpacity style={styles.dcBtn} onPress={() => setItem(item.id, qty - 1)} disabled={qty === 0}>
+                      <Minus size={16} color={qty === 0 ? Colors.textTertiary : Colors.primary} />
+                    </TouchableOpacity>
+                    <Text style={styles.dcQty}>{qty}</Text>
+                    <TouchableOpacity style={styles.dcBtn} onPress={() => setItem(item.id, qty + 1)}>
+                      <Plus size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+
       <TextInput
         style={styles.instructionsInput}
         placeholder="Special instructions (optional)"
@@ -543,9 +586,15 @@ export default function SchedulePickupScreen() {
 
         <View style={styles.pricingCard}>
           <View style={styles.pricingRow}>
-            <Text style={styles.pricingLabel}>Subtotal</Text>
-            <Text style={styles.pricingValue}>${estimatedPrice.toFixed(2)}</Text>
+            <Text style={styles.pricingLabel}>Laundry</Text>
+            <Text style={styles.pricingValue}>${(estimatedPrice - dryCleanTotal).toFixed(2)}</Text>
           </View>
+          {dryCleanTotal > 0 && (
+            <View style={styles.pricingRow}>
+              <Text style={styles.pricingLabel}>Dry cleaning</Text>
+              <Text style={styles.pricingValue}>${dryCleanTotal.toFixed(2)}</Text>
+            </View>
+          )}
           <View style={styles.pricingRow}>
             <Text style={styles.pricingLabel}>Pickup fee</Text>
             <Text style={[styles.pricingValue, isMember && { color: Colors.success, fontWeight: '700' as const }]}>{isMember ? 'FREE' : '$3.99'}</Text>
@@ -885,6 +934,17 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
+  dcSection: { marginTop: 8, marginBottom: 8 },
+  dcHeading: { fontSize: 16, fontWeight: '700' as const, color: Colors.text },
+  dcSub: { fontSize: 13, color: Colors.textTertiary, marginTop: 2 },
+  dcCat: { fontSize: 12, fontWeight: '700' as const, color: Colors.textSecondary, marginTop: 14, marginBottom: 2, textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  dcRow: { flexDirection: 'row' as const, alignItems: 'center' as const, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  dcInfo: { flex: 1 },
+  dcName: { fontSize: 14, fontWeight: '600' as const, color: Colors.text },
+  dcPrice: { fontSize: 12, color: Colors.textTertiary, marginTop: 2 },
+  dcStepper: { flexDirection: 'row' as const, alignItems: 'center' as const, gap: 14 },
+  dcBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' as const, justifyContent: 'center' as const },
+  dcQty: { fontSize: 15, fontWeight: '700' as const, color: Colors.text, minWidth: 16, textAlign: 'center' as const },
   dateGroup: {
     marginBottom: 20,
   },

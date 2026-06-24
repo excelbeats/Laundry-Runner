@@ -65,12 +65,20 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+export interface LineItem {
+  id: string;
+  name: string;
+  price: number;
+  qty: number;
+}
+
 export interface Order {
   id: string;
   customerId: string;
   driverId?: string;
   status: OrderStatus;
   services: ServiceType[];
+  lineItems?: LineItem[];
   pickupAddress: Address;
   deliveryAddress: Address;
   pickupSlot: TimeSlot;

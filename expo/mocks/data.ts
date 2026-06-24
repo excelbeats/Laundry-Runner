@@ -95,6 +95,26 @@ export const mockServices: Service[] = [
   },
 ];
 
+export interface DryCleanItem {
+  id: string;
+  name: string;
+  price: number;
+  category: string;
+}
+
+// Dry cleaning + household items are priced per item (not per pound).
+export const dryCleanItems: DryCleanItem[] = [
+  { id: 'dc_shirt', name: 'Shirt / Blouse', price: 3.5, category: 'Dry Cleaning' },
+  { id: 'dc_pants', name: 'Pants / Slacks', price: 7, category: 'Dry Cleaning' },
+  { id: 'dc_blazer', name: 'Blazer / Jacket', price: 9, category: 'Dry Cleaning' },
+  { id: 'dc_dress', name: 'Dress', price: 12, category: 'Dry Cleaning' },
+  { id: 'dc_suit', name: 'Suit (2-piece)', price: 15, category: 'Dry Cleaning' },
+  { id: 'dc_coat', name: 'Coat', price: 18, category: 'Dry Cleaning' },
+  { id: 'hh_blanket', name: 'Blanket', price: 18, category: 'Household' },
+  { id: 'hh_bedding', name: 'Bedding Set', price: 22, category: 'Household' },
+  { id: 'hh_comforter', name: 'Comforter', price: 25, category: 'Household' },
+];
+
 export const mockDriver: Driver = {
   id: 'driver_1',
   name: 'Marcus Johnson',
